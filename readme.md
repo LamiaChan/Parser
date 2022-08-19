@@ -1,9 +1,13 @@
 # LamiaChan Parser
 Manga parsers for lamia chan ecosystem
+
 ## Installation
+- [install selenium web driver](https://www.selenium.dev/documentation/webdriver/getting_started/install_drivers/)
+- create python venv
 ```
 pip install -r requirements.txt
 ```
+
 ## Run 
 ```
 flask --app main run
