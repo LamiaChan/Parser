@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, dataclasses, urllib.request, os
+import json, dataclasses, urllib.request, os, shutil
 from dataclasses import dataclass, field
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -41,13 +41,16 @@ class MangaData:
 
 class Cache:
     @classmethod
+    def clear_cache(cls, cache_path: str, manga_name: str):
+        shutil.rmtree(cls.get_dir(cache_path, manga_name))
+
+    @classmethod
     def check_parsed(cls, cache_path: str, manga_name: str) -> bool:
         return os.path.exists(Path.joinpath(cache_path, manga_name)) 
     
     @classmethod
-    def create_dir(cls, cache_path: str, manga_name: str) -> Path:
-        Path(f'{cache_path}/{manga_name}').mkdir(parents=True, exist_ok=True)
-        return Path(f'{cache_path}/{manga_name}')
+    def create_dir(cls, cache_path: str, manga_name: str):
+        cls.get_dir(cache_path, manga_name).mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def create_img_dir(cls, cache_path: str, manga_name: str) -> Path:
@@ -58,12 +61,20 @@ class Cache:
     def save_manifest(cls, path: str, manifest: json):
         with open(f'{path}/data.json', 'w') as f:
             f.write(manifest)
+    
+    @classmethod
+    def get_manifest(cls, path: str):
+        return open(f'{path}/data.json', "r")
+    
+    @classmethod
+    def get_dir(cls, cache_path: str, manga_name: str) -> Path:
+        return Path(f'{cache_path}/{manga_name}')
 
 class BaseParser:
     """
     Class representing Base Parser for manga
     """
-    def __init__(self, site_url: str, manga_url: str, driver = webdriver.Firefox()) -> None:
+    def __init__(self, site_url: str, manga_url: str, driver) -> None:
         self.site_url = site_url
         self.manga_url = manga_url
         self.manga_data = MangaData()
@@ -107,7 +118,8 @@ class BaseParser:
         """
         for vol_inx, url in enumerate(self.manga_data.manga_imgs_urls):
             for page_inx, img_url in enumerate(url.imgs_urls):
-                print(path.joinpath(str(vol_inx)))
-                # path.joinpath(vol_inx).mkdir(parents=True, exist_ok=True)
-                # urllib.request.urlretrieve(img_url, f'{path}/{vol_inx}/{page_inx}.png')
-                # self.manga_data.manga_imgs_urls[vol_inx].imgs_paths.append(os.path.abspath(path.joinpath(f'{vol_inx}/{page_inx}.png')))
+                if not os.path.exists(path.joinpath(str(vol_inx))):
+                    path.joinpath(str(vol_inx)).mkdir(parents=True, exist_ok=False)
+                vol_path = path.joinpath(str(vol_inx))
+                urllib.request.urlretrieve(img_url, f'{vol_path}/{page_inx}.png')
+                self.manga_data.manga_imgs_urls[vol_inx].imgs_paths.append(f'{vol_path}/{page_inx}.png')
